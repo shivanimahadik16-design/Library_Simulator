@@ -2,17 +2,25 @@ import React from "react";
 import { states } from "../data/states";
 
 const nodes = {
-  q0: { x: 120, y: 250 },
-  q1: { x: 300, y: 150 },
-  q2: { x: 500, y: 150 },
-  q3: { x: 700, y: 150 },
-  q4: { x: 880, y: 80 },
-  q5: { x: 880, y: 230 },
-  q6: { x: 1040, y: 80 },
-  q7: { x: 300, y: 400 },
-  q8: { x: 520, y: 400 },
-  q9: { x: 700, y: 300 },
-  q10: { x: 720, y: 500 }
+  q0: { x: 90, y: 210 },
+  q1: { x: 250, y: 210 },
+  q2: { x: 410, y: 210 },
+  q3: { x: 570, y: 210 },
+  q4: { x: 730, y: 125 },
+  q5: { x: 730, y: 300 },
+  q6: { x: 910, y: 125 },
+  q7: { x: 230, y: 445 },
+  q8: { x: 455, y: 445 },
+  q9: { x: 520, y: 355 },
+  q10: { x: 650, y: 505 }
+};
+
+const returnRoutes = {
+  "q0-q7": { x: 24, y: 350 },
+  "q5-q0": { x: 520, y: 495 },
+  "q6-q0": { x: 500, y: 24 },
+  "q8-q0": { x: 250, y: 570 },
+  "q9-q0": { x: 190, y: 485 }
 };
 
 const edges = [
@@ -41,7 +49,7 @@ function nodePoint(id) {
 export default function AutomataDiagram({ currentState, animatingEdge, onSelectState }) {
   return (
     <div className="diagram-wrap">
-      <svg className="automata-svg" viewBox="0 0 1160 590" role="img" aria-label="Library finite automaton state diagram">
+      <svg className="automata-svg" viewBox="0 0 1000 600" role="img" aria-label="Library finite automaton state diagram">
         <defs>
           <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
             <path d="M0,0 L0,7 L8,3.5 z" fill="currentColor" />
@@ -77,26 +85,28 @@ export default function AutomataDiagram({ currentState, animatingEdge, onSelectS
           const endY = b.y - uy * 43;
           const mx = (startX + endX) / 2;
           const my = (startY + endY) / 2;
-          const curve = from === "q0" && to === "q7" ? 45 : (from === "q7" && to === "q10" ? 35 : 0);
-          const px = -uy * curve;
-          const py = ux * curve;
-          const cx = mx + px;
-          const cy = my + py;
+          const control = returnRoutes[`${from}-${to}`];
+          const curve = from === "q7" && to === "q10" ? 35 : 0;
+          const cx = control?.x ?? mx - uy * curve;
+          const cy = control?.y ?? my + ux * curve;
+          const labelX = (startX + 2 * cx + endX) / 4;
+          const labelY = (startY + 2 * cy + endY) / 4;
+          const path = `M ${startX} ${startY} Q ${cx} ${cy} ${endX} ${endY}`;
 
           return (
             <g key={index} className={active ? "edge active-edge" : "edge"}>
               <path
-                d={`M ${startX} ${startY} Q ${cx || mx} ${cy || my} ${endX} ${endY}`}
+                d={path}
                 fill="none"
                 markerEnd="url(#arrow)"
               />
-              <text x={cx || mx} y={(cy || my) - 9} textAnchor="middle">{label}</text>
+              <text x={labelX} y={labelY - 9} textAnchor="middle">{label}</text>
               {active && (
                 <circle className="travel-dot">
                   <animateMotion
                     dur="0.65s"
                     repeatCount="1"
-                    path={`M ${startX} ${startY} Q ${cx || mx} ${cy || my} ${endX} ${endY}`}
+                    path={path}
                   />
                 </circle>
               )}
