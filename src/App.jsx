@@ -4,6 +4,7 @@ import ControlPanel from "./components/ControlPanel";
 import TransitionHistory from "./components/TransitionHistory";
 import AutomatonInfo from "./components/AutomatonInfo";
 import StringTester from "./components/StringTester";
+import TransitionTable from "./components/TransitionTable";
 import { states } from "./data/states";
 import { getTransition } from "./data/transitions";
 
@@ -211,6 +212,8 @@ export default function App() {
           </section>
         </aside>
       </div>
+
+      <TransitionTable />
     </main>
   );
 }
