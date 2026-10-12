@@ -82,8 +82,28 @@ const optionDetails = {
   }
 };
 
-export default function ControlPanel({ currentState, onInput, onReset, onRunScenario, running, speed, setSpeed }) {
-  const available = getAvailableInputs(currentState);
+export default function ControlPanel({
+  currentState,
+  onInput,
+  onReset,
+  onRunScenario,
+  running,
+  speed,
+  setSpeed,
+  issueDate,
+  setIssueDate,
+  returnDate,
+  setReturnDate,
+  bookCount,
+  setBookCount,
+  returnCalculation,
+  onCalculateReturn,
+  loanSummary
+}) {
+  const available = getAvailableInputs(currentState).filter(
+    transition => currentState !== "q7" || !["no_fine", "fine_due"].includes(transition.input)
+  );
+  const issueDetails = calculateIssueDetails(issueDate, bookCount);
 
   return (
     <section className="panel controls-panel">
@@ -94,6 +114,105 @@ export default function ControlPanel({ currentState, onInput, onReset, onRunScen
         </div>
         <span className="state-pill">{currentState}</span>
       </div>
+
+      {["q1", "q2", "q3", "q4"].includes(currentState) && (
+        <div className="loan-fields">
+          <h3>Borrowing details</h3>
+          <p className="loan-calculation">
+            Enter how many books you are borrowing. Checkout cannot continue until a quantity is selected.
+          </p>
+          <label>
+            Issue date
+            <input
+              type="date"
+              value={issueDate}
+              onChange={event => setIssueDate(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Number of books
+            <input
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Enter quantity"
+              value={bookCount}
+              onChange={event => setBookCount(event.target.value)}
+              required
+            />
+          </label>
+        </div>
+      )}
+
+      {currentState === "q7" && (
+        <form
+          className="loan-fields"
+          onSubmit={event => {
+            event.preventDefault();
+            onCalculateReturn();
+          }}
+        >
+          <h3>Return details</h3>
+          <p className="loan-calculation">
+            Enter the original issue date and number of books to calculate the fine.
+          </p>
+          <label>
+            Issue date
+            <input
+              type="date"
+              value={issueDate}
+              onChange={event => setIssueDate(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Number of books
+            <input
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Enter quantity"
+              value={bookCount}
+              onChange={event => setBookCount(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Return date
+            <input
+              type="date"
+              min={issueDate}
+              value={returnDate}
+              onChange={event => setReturnDate(event.target.value)}
+              required
+            />
+          </label>
+          <p className="loan-calculation">
+            The first 10 days are fine-free; after that, each overdue day costs ₹2 per book.
+          </p>
+          <p className="loan-calculation">
+            {"error" in returnCalculation
+              ? returnCalculation.error
+              : `${returnCalculation.daysBorrowed} days borrowed · ${returnCalculation.overdueDays} overdue · ₹${returnCalculation.fineAmount} fine`}
+          </p>
+          <button className="primary-btn" type="submit" disabled={running || "error" in returnCalculation}>
+            Calculate fine &amp; check in
+          </button>
+        </form>
+      )}
+
+      {currentState === "q10" && loanSummary && (
+        <div className="loan-calculation fine-summary">
+          Fine due: <strong>₹{loanSummary.fineAmount}</strong> for {loanSummary.bookCount} book(s), {loanSummary.overdueDays} overdue day(s).
+        </div>
+      )}
+
+      {currentState === "q8" && loanSummary && (
+        <div className="loan-calculation">
+          Return complete: {loanSummary.daysBorrowed} days borrowed, fine ₹{loanSummary.fineAmount}.
+        </div>
+      )}
 
       <div className="transition-options">
         {available.map(transition => {
@@ -109,7 +228,7 @@ export default function ControlPanel({ currentState, onInput, onReset, onRunScen
             key={transition.input}
             className={`transition-option transition-option-${option.style}`}
             onClick={() => onInput(transition.input)}
-            disabled={running}
+            disabled={running || (["q1", "q4"].includes(currentState) && !issueDetails)}
           >
             <span className="transition-option-icon" aria-hidden="true">{option.icon}</span>
             <span className="transition-option-copy">
@@ -125,7 +244,7 @@ export default function ControlPanel({ currentState, onInput, onReset, onRunScen
         })}
       </div>
 
-      {available.length === 0 && (
+      {available.length === 0 && currentState !== "q7" && (
         <div className="warning">No valid transition is defined from this state.</div>
       )}
 
@@ -150,4 +269,8 @@ export default function ControlPanel({ currentState, onInput, onReset, onRunScen
       </label>
     </section>
   );
+}
+
+function calculateIssueDetails(date, count) {
+  return Boolean(date) && Number.isInteger(Number(count)) && Number(count) >= 1;
 }

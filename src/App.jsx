@@ -7,6 +7,15 @@ import StringTester from "./components/StringTester";
 import TransitionTable from "./components/TransitionTable";
 import { states } from "./data/states";
 import { getTransition } from "./data/transitions";
+import { calculateLoanFine } from "./data/loan";
+
+function todayLocalDate() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 const demo = [
   "issue_book",
@@ -26,6 +35,11 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState(700);
   const [message, setMessage] = useState("Machine ready. Waiting for input.");
+  const [issueDate, setIssueDate] = useState(todayLocalDate);
+  const [returnDate, setReturnDate] = useState(todayLocalDate);
+  const [bookCount, setBookCount] = useState("");
+  const [loanSummary, setLoanSummary] = useState(null);
+  const returnCalculation = calculateLoanFine(issueDate, returnDate, Number(bookCount));
 
   const stateDetails = useMemo(
     () => states.find(s => s.id === selectedState) || states[0],
@@ -44,6 +58,17 @@ export default function App() {
     if (!transition) {
       setMessage(`Invalid transition: ${fromState} + ${input}`);
       return false;
+    }
+
+    if (input === "issue_book") {
+      setIssueDate(todayLocalDate());
+      setReturnDate(todayLocalDate());
+      setBookCount("");
+      setLoanSummary(null);
+    }
+
+    if (input === "confirm") {
+      setLoanSummary(null);
     }
 
     setLastInput(input);
@@ -66,6 +91,20 @@ export default function App() {
     return transition.to;
   }
 
+  async function calculateReturn() {
+    if ("error" in returnCalculation) return;
+
+    setLoanSummary({
+      issueDate,
+      returnDate,
+      bookCount: Number(bookCount),
+      ...returnCalculation
+    });
+
+    const input = returnCalculation.fineAmount > 0 ? "fine_due" : "no_fine";
+    await processInput(input);
+  }
+
   async function runScenario() {
     if (running) return;
     setRunning(true);
@@ -73,6 +112,7 @@ export default function App() {
     setSelectedState("q0");
     setHistory([]);
     setLastInput(null);
+    setLoanSummary(null);
     setMessage("Running successful issue scenario...");
 
     let scenarioState = "q0";
@@ -93,6 +133,10 @@ export default function App() {
     setHistory([]);
     setAnimatingEdge(null);
     setLastInput(null);
+    setIssueDate(todayLocalDate());
+    setReturnDate(todayLocalDate());
+    setBookCount("");
+    setLoanSummary(null);
     setMessage("Machine reset. Waiting for input.");
   }
 
@@ -160,6 +204,15 @@ export default function App() {
               running={running}
               speed={speed}
               setSpeed={setSpeed}
+              issueDate={issueDate}
+              setIssueDate={setIssueDate}
+              returnDate={returnDate}
+              setReturnDate={setReturnDate}
+              bookCount={bookCount}
+              setBookCount={setBookCount}
+              returnCalculation={returnCalculation}
+              onCalculateReturn={calculateReturn}
+              loanSummary={loanSummary}
             />
 
             <div className="panel current-panel">

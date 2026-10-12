@@ -16,6 +16,7 @@ A React + Vite mini project for **Finite Automata and Formal Languages (FAFL)**.
 - Input-string tester for accepted/rejected sequences
 - Invalid transition detection
 - State details and accepting-state information
+- Automatic overdue fine calculation: 10 fine-free days, then ₹2 per book per day
 
 ## Automaton
 
@@ -41,9 +42,14 @@ A React + Vite mini project for **Finite Automata and Formal Languages (FAFL)**.
 - `q3 --book_unavailable--> q5`
 - `q4 --confirm--> q6`
 - `q0 --return_book--> q7`
-- `q7 --no_fine--> q8`
-- `q7 --fine_due--> q10`
+- `q7 --no_fine (10 days or less)--> q8`
+- `q7 --fine_due (over 10 days)--> q10`
 - `q10 --payment_done--> q8`
+
+At checkout, enter the issue date and number of books. At return, enter the return date;
+the machine calculates elapsed calendar days and selects the no-fine or fine-payment
+transition automatically. The first 10 days are fine-free. Each additional day costs
+₹2 per book (for example, 12 days for 2 books costs ₹8).
 
 ## Run the project
 
